@@ -597,24 +597,29 @@ def generate_briefing(country, claude_client, tavily_client, model_name):
 # ═══════════════════════════════════════════════════════════════════
 
 # ─── Header ──────────────────────────────────────────────────────
-logo_img = ""
-if LOGO_B64:
-    logo_img = f'<img src="data:image/png;base64,{LOGO_B64}" width="52" height="52" style="border-radius:10px;" alt="GeoIntel AI Logo">'
-
-st.markdown(f"""
-<div style="display:flex;align-items:center;justify-content:space-between;padding:0.8rem 0 1rem;border-bottom:1px solid #E7E5E4;margin-bottom:1.2rem;">
-    <div style="display:flex;align-items:center;gap:14px;">
-        {logo_img}
-        <div>
+header_left, header_right = st.columns([4, 1])
+with header_left:
+    logo_col, text_col = st.columns([0.08, 0.92])
+    with logo_col:
+        if LOGO_B64:
+            logo_bytes = base64.b64decode(LOGO_B64)
+            st.image(logo_bytes, width=48)
+    with text_col:
+        st.markdown("""
+        <div style="padding-top:2px;">
             <div style="font-size:1.35rem;font-weight:600;color:#1C1917;line-height:1.2;">GeoIntel AI</div>
             <div style="font-size:0.8rem;color:#78716C;">AI-powered geopolitical intelligence briefings</div>
         </div>
+        """, unsafe_allow_html=True)
+with header_right:
+    st.markdown("""
+    <div style="text-align:right;padding-top:10px;">
+        <span style="font-size:0.72rem;color:#A8A29E;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:16px;padding:5px 14px;">
+            Powered by Claude AI + Tavily
+        </span>
     </div>
-    <div style="font-size:0.72rem;color:#A8A29E;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:16px;padding:5px 14px;">
-        Powered by Claude AI + Tavily
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+st.markdown('<div style="height:1px;background:#E7E5E4;margin:0 0 1.2rem;"></div>', unsafe_allow_html=True)
 
 # ─── Search bar ──────────────────────────────────────────────────
 st.markdown('<p style="font-size:0.72rem;font-weight:500;color:#78716C;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:0.3rem;">Country</p>', unsafe_allow_html=True)
@@ -647,14 +652,14 @@ for i, name in enumerate(quick_countries):
             st.session_state["auto_run"] = True
             st.rerun()
 
-# Show flag images as a visual row above/below chips
-flag_row_html = '<div style="display:flex;gap:8px;justify-content:center;margin:0.3rem 0 0.8rem;flex-wrap:wrap;">'
+# Show flag images as a visual row below chips using components.html (st.markdown strips <img>)
+flag_row_html = '<div style="display:flex;gap:12px;justify-content:center;padding:4px 0;flex-wrap:wrap;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;">'
 for name in quick_countries:
     flag_html = get_flag_html(name, 24, 16)
     if flag_html:
         flag_row_html += f'<div style="display:flex;align-items:center;gap:4px;font-size:0.7rem;color:#78716C;">{flag_html} {name}</div>'
 flag_row_html += '</div>'
-st.markdown(flag_row_html, unsafe_allow_html=True)
+components.html(flag_row_html, height=30, scrolling=False)
 
 st.markdown('<div style="height:1px;background:#E7E5E4;margin:0.5rem 0 1rem;"></div>', unsafe_allow_html=True)
 
@@ -671,15 +676,23 @@ if (run_button or auto_run) and country:
             country, claude_client, tavily_client, model
         )
 
-        # Country flag + name header
+        # Country flag + name header (use components.html for <img> tag)
         flag_header = get_flag_html(country, 36, 24)
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:12px;margin:0.5rem 0 1rem;">
-            {flag_header}
-            <span style="font-size:1.3rem;font-weight:600;color:#1C1917;">{country}</span>
-            <span style="font-size:0.75rem;color:#A8A29E;">Briefing generated · {time.strftime("%B %Y")}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        if flag_header:
+            components.html(f"""
+            <div style="display:flex;align-items:center;gap:12px;padding:4px 0;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;">
+                {flag_header}
+                <span style="font-size:1.3rem;font-weight:600;color:#1C1917;">{country}</span>
+                <span style="font-size:0.75rem;color:#A8A29E;">Briefing generated · {time.strftime("%B %Y")}</span>
+            </div>
+            """, height=45, scrolling=False)
+        else:
+            st.markdown(f"""
+            <div style="display:flex;align-items:center;gap:12px;margin:0.5rem 0 1rem;">
+                <span style="font-size:1.3rem;font-weight:600;color:#1C1917;">{country}</span>
+                <span style="font-size:0.75rem;color:#A8A29E;">Briefing generated · {time.strftime("%B %Y")}</span>
+            </div>
+            """, unsafe_allow_html=True)
 
         # Stats row
         col1, col2, col3, col4 = st.columns(4)
